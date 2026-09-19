@@ -1,12 +1,11 @@
 import * as React from "react";
 import Profile from "./Profile";
-import { makeStyles, tokens } from "@fluentui/react-components";
+import { MessageBar, makeStyles, tokens } from "@fluentui/react-components";
 import { EMPTY_PROFILE, UserProfile } from "./Profile/types";
-import { useWorkbookPreferences } from "../useWorkbookPreferences";
-import { mergeWorkbookPreferences, WorkbookPreferences } from "../workbookPreferences";
-import { useWorkbookCompanies } from "../useWorkbookCompanies";
 import { useCompanyEnrichment } from "../companyEnrichment";
 import { TrackedCompany } from "./Profile/types";
+import { useWorkbookWorkspace } from "../useWorkbookWorkspace";
+import { useStartupSignals } from "../useStartupSignals";
 
 interface AppProps {
   title: string;
@@ -60,6 +59,9 @@ function loadProfile(): UserProfile {
       geographies: Array.isArray(parsed.geographies) ? parsed.geographies : [],
       companyQualities: Array.isArray(parsed.companyQualities) ? parsed.companyQualities : [],
       companies: Array.isArray(parsed.companies) ? parsed.companies : [],
+      events: Array.isArray(parsed.events) ? parsed.events : [],
+      radarCompanies: Array.isArray(parsed.radarCompanies) ? parsed.radarCompanies : [],
+      signals: Array.isArray(parsed.signals) ? parsed.signals : EMPTY_PROFILE.signals,
     };
   } catch {
     return EMPTY_PROFILE;
@@ -79,17 +81,27 @@ const App: React.FC<AppProps> = ({ title }) => {
     setProfile(saveProfile(updatedProfile));
   }, [saveProfile]);
 
-  const updatePreferencesFromWorkbook = React.useCallback(
-    (workbookPreferences: WorkbookPreferences) => {
-      setProfile((currentProfile) =>
-        saveProfile(mergeWorkbookPreferences(currentProfile, workbookPreferences))
-      );
-    },
-    [saveProfile]
-  );
+  const initialiseProfile = React.useCallback((workbookProfile: UserProfile) => {
+    setProfile(saveProfile(workbookProfile));
+  }, [saveProfile]);
+  const workbook = useWorkbookWorkspace(profile, initialiseProfile);
 
-  useWorkbookPreferences(updatePreferencesFromWorkbook);
-  useWorkbookCompanies(profile.companies);
+  const mergeNewsEvents = React.useCallback((events: UserProfile["events"]) => {
+    if (!events.length) return;
+    setProfile((currentProfile) => {
+      const existing = new Set(currentProfile.events.map((event) => event.informationLocation || event.id));
+      const newEvents = events.filter((event) => !existing.has(event.informationLocation || event.id));
+      return newEvents.length
+        ? saveProfile({ ...currentProfile, events: [...newEvents, ...currentProfile.events] })
+        : currentProfile;
+    });
+  }, [saveProfile]);
+  const isScanningNews = useStartupSignals(
+    !workbook.isInitialising,
+    profile.companies,
+    profile.radarCompanies,
+    mergeNewsEvents
+  );
 
   const updateCompany = React.useCallback(
     (id: string, updater: (company: TrackedCompany) => TrackedCompany) => {
@@ -113,6 +125,9 @@ const App: React.FC<AppProps> = ({ title }) => {
         <h1 className={styles.title}>Investment radar</h1>
         <p className={styles.subtitle}>Keep your thesis, portfolio, and companies to watch in one place.</p>
       </header>
+      {workbook.isInitialising && <MessageBar intent="info">Scanning this workbook and preparing Overview, Companies, and Events…</MessageBar>}
+      {isScanningNews && <MessageBar intent="info">Checking startup news and classifying company signals…</MessageBar>}
+      {workbook.error && <MessageBar intent="error">Workbook setup could not finish: {workbook.error}</MessageBar>}
       <Profile profile={profile} onChange={updateProfile} onEnrichCompany={companyEnrichment.retry} />
     </main>
   );

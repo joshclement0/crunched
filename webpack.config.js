@@ -137,6 +137,28 @@ module.exports = async (env, options) => {
             }
           });
         });
+        devServer.app.post("/api/startup-signals", (request, response) => {
+          let body = "";
+          request.on("data", (chunk) => {
+            body += chunk;
+            if (body.length > 50_000) request.destroy();
+          });
+          request.on("end", async () => {
+            response.setHeader("Content-Type", "application/json");
+            try {
+              const input = JSON.parse(body || "{}");
+              const { runDailyStartupScrub } = await import("./server/dailyStartupScrub.mjs");
+              const result = await runDailyStartupScrub({
+                followedCompanies: input.companies,
+                includeMockedData: false,
+              });
+              response.end(JSON.stringify({ articles: result.articles, warnings: result.warnings }));
+            } catch (error) {
+              response.statusCode = error instanceof SyntaxError ? 400 : 500;
+              response.end(JSON.stringify({ error: error.message || "Startup signal scan failed" }));
+            }
+          });
+        });
         return middlewares;
       },
     },

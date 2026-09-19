@@ -48,6 +48,26 @@ export interface TrackedCompany {
   createdAt: string;
 }
 
+export type SignalImpact = "positive" | "negative" | "neutral";
+
+export interface CompanyEvent {
+  id: string;
+  companyName: string;
+  occurredAt: string;
+  title: string;
+  details: string;
+  signal: string;
+  impact: SignalImpact;
+  informationLocation: string;
+  createdAt: string;
+}
+
+export interface RadarPreferences {
+  sectors: string[];
+  signals: string[];
+  companies: string[];
+}
+
 export type CompanyDraft = Omit<TrackedCompany, "id" | "createdAt">;
 
 export const EMPTY_COMPANY_DRAFT: CompanyDraft = {
@@ -69,6 +89,9 @@ export interface UserProfile {
   geographies: string[];
   companyQualities: string[];
   companies: TrackedCompany[];
+  events: CompanyEvent[];
+  radarCompanies: string[];
+  signals: string[];
 }
 
 export const EMPTY_PROFILE: UserProfile = {
@@ -79,6 +102,18 @@ export const EMPTY_PROFILE: UserProfile = {
   geographies: [],
   companyQualities: [],
   companies: [],
+  events: [],
+  radarCompanies: [],
+  signals: [
+    "Funding",
+    "M&A",
+    "Leadership",
+    "Product",
+    "Partnership",
+    "Regulatory",
+    "Workforce",
+    "Distress",
+  ],
 };
 
 export const SECTOR_OPTIONS = [

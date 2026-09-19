@@ -1,49 +1,44 @@
 import * as React from "react";
-import { Badge, Button, Card, Field, Input, Textarea } from "@fluentui/react-components";
-import { Target20Regular } from "@fluentui/react-icons";
+import { Badge, Button, Card } from "@fluentui/react-components";
+import { Alert20Regular, ArrowRight20Regular } from "@fluentui/react-icons";
+import { urgentCompanies } from "../../workbookModel";
 import { UserProfile } from "./types";
 import { useProfileStyles } from "./styles";
 
 interface OverviewViewProps {
   profile: UserProfile;
-  onFieldChange: <K extends keyof UserProfile>(field: K, value: UserProfile[K]) => void;
+  onOpenCompanies: () => void;
   onEditPreferences: () => void;
 }
 
-export default function OverviewView({ profile, onFieldChange, onEditPreferences }: OverviewViewProps) {
+export default function OverviewView({ profile, onOpenCompanies, onEditPreferences }: OverviewViewProps) {
   const styles = useProfileStyles();
   const investedCount = profile.companies.filter((company) => company.relationship === "invested").length;
   const followingCount = profile.companies.filter((company) => company.relationship === "following").length;
+  const urgent = urgentCompanies(profile).slice(0, 3);
 
   return (
     <div className={styles.stack}>
-      <Card className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div><h2 className={styles.sectionTitle}>{profile.name ? `${profile.name}'s profile` : "Your investor profile"}</h2><p className={styles.muted}>The signal behind future company alerts.</p></div>
-          <Target20Regular />
-        </div>
-        <div className={styles.formGrid}>
-          <Field label="Name"><Input value={profile.name} placeholder="Your name" onChange={(_, data) => onFieldChange("name", data.value)} /></Field>
-          <Field label="Investment thesis" hint="A short description of what makes a company interesting to you.">
-            <Textarea resize="vertical" value={profile.investmentThesis} placeholder="I invest in capital-efficient Nordic companies that..." onChange={(_, data) => onFieldChange("investmentThesis", data.value)} />
-          </Field>
-        </div>
-      </Card>
       <div className={styles.stats}>
-        <div className={styles.stat}><span className={styles.statNumber}>{investedCount}</span><span className={styles.statLabel}>Invested</span></div>
-        <div className={styles.stat}><span className={styles.statNumber}>{followingCount}</span><span className={styles.statLabel}>Following</span></div>
-        <div className={styles.stat}><span className={styles.statNumber}>{profile.sectors.length}</span><span className={styles.statLabel}>Sectors</span></div>
+        <button type="button" className={styles.statButton} onClick={onOpenCompanies}><span className={styles.statNumber}>{investedCount}</span><span className={styles.statLabel}>Invested</span></button>
+        <button type="button" className={styles.statButton} onClick={onOpenCompanies}><span className={styles.statNumber}>{followingCount}</span><span className={styles.statLabel}>Following</span></button>
+        <button type="button" className={styles.statButton} onClick={onEditPreferences}><span className={styles.statNumber}>{profile.radarCompanies.length}</span><span className={styles.statLabel}>Radar</span></button>
       </div>
       <Card className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div><h2 className={styles.sectionTitle}>Sector radar</h2><p className={styles.muted}>Areas you want to follow or work in.</p></div>
-          <Button appearance="subtle" size="small" onClick={onEditPreferences}>Edit</Button>
+        <div className={styles.cardHeader}><div><h2 className={styles.sectionTitle}>Needs attention</h2><p className={styles.muted}>Your three most urgent companies, ranked from events and review dates.</p></div><Alert20Regular /></div>
+        <div className={styles.attentionList}>
+          {urgent.map((company, index) => <div className={styles.attentionRow} key={company.name}><span className={styles.rank}>{index + 1}</span><div className={styles.companyBody}><h3 className={styles.companyName}>{company.name}</h3><p className={styles.companyMeta}>{company.relationship} · {company.sector}</p></div><Badge appearance="tint" color={company.score >= 30 ? "danger" : company.score ? "warning" : "informative"}>{company.score}</Badge></div>)}
+          {!urgent.length && <p className={styles.emptyText}>Add a company or radar target to start the overview.</p>}
         </div>
-        <div className={styles.chips}>
-          {profile.sectors.length ? profile.sectors.map((sector) => <Badge key={sector} appearance="tint" color="success">{sector}</Badge>) : <span className={styles.muted}>No sectors selected yet.</span>}
+        <Button appearance="subtle" icon={<ArrowRight20Regular />} iconPosition="after" onClick={onOpenCompanies}>Open companies</Button>
+      </Card>
+      <Card className={styles.card}>
+        <div className={styles.cardHeader}><div><h2 className={styles.sectionTitle}>Latest signals</h2><p className={styles.muted}>Recent events across the companies you track.</p></div></div>
+        <div className={styles.eventList}>
+          {[...profile.events].sort((left, right) => right.occurredAt.localeCompare(left.occurredAt)).slice(0, 4).map((event) => <div className={styles.eventRow} key={event.id}><span className={`${styles.impactDot} ${event.impact === "negative" ? styles.negative : event.impact === "positive" ? styles.positive : styles.neutral}`} /><div><strong>{event.companyName}</strong><p>{event.title}</p><small>{event.occurredAt} · {event.signal}</small></div></div>)}
+          {!profile.events.length && <p className={styles.emptyText}>No events yet. Add one from the Companies tab.</p>}
         </div>
       </Card>
-      <div className={styles.callout}><p className={styles.calloutText}><strong>Notification foundation ready.</strong> Your preferences and company lists can now be used to rank news, funding rounds, leadership changes, and follow-up reminders.</p></div>
     </div>
   );
 }

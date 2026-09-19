@@ -1,6 +1,6 @@
 import * as React from "react";
-import ChoiceGroup from "./ChoiceGroup";
-import { GEOGRAPHY_OPTIONS, QUALITY_OPTIONS, SECTOR_OPTIONS, STAGE_OPTIONS, UserProfile } from "./types";
+import EditableList from "./EditableList";
+import { UserProfile } from "./types";
 import { useProfileStyles } from "./styles";
 
 interface PreferencesViewProps {
@@ -10,13 +10,12 @@ interface PreferencesViewProps {
 
 export default function PreferencesView({ profile, onFieldChange }: PreferencesViewProps) {
   const styles = useProfileStyles();
-
   return (
     <div className={styles.stack}>
-      <ChoiceGroup label="Sectors" description="Choose the sectors you invest in or want to work with." options={SECTOR_OPTIONS} selected={profile.sectors} onChange={(value) => onFieldChange("sectors", value)} />
-      <ChoiceGroup label="Company stage" description="What maturity levels normally fit your investment style?" options={STAGE_OPTIONS} selected={profile.stages} onChange={(value) => onFieldChange("stages", value)} />
-      <ChoiceGroup label="Geography" description="Where should companies have their main footprint?" options={GEOGRAPHY_OPTIONS} selected={profile.geographies} onChange={(value) => onFieldChange("geographies", value)} />
-      <ChoiceGroup label="Company qualities" description="Signals you consistently value when evaluating a company." options={QUALITY_OPTIONS} selected={profile.companyQualities} onChange={(value) => onFieldChange("companyQualities", value)} />
+      <div className={styles.intro}><h2>Radar preferences</h2><p>These choices shape which companies and startup events rise to the top.</p></div>
+      <EditableList label="Sector radar" description="Sectors selected here are combined with sectors from your tracked companies." items={profile.sectors} placeholder="Add a sector" onChange={(items) => onFieldChange("sectors", items)} />
+      <EditableList label="Signals" description="Event categories the assistant should classify and watch for." items={profile.signals} placeholder="Add a signal" onChange={(items) => onFieldChange("signals", items)} />
+      <EditableList label="Additional companies" description="Companies to keep on the radar before adding them to the tracked list." items={profile.radarCompanies} placeholder="Add a company" onChange={(items) => onFieldChange("radarCompanies", items)} />
     </div>
   );
 }

@@ -17,9 +17,9 @@ export default function Profile({ profile, onChange, onEnrichCompany }: ProfileP
 
   return (
     <ProfileLayout activeView={activeView} onViewChange={setActiveView}>
-      {activeView === "overview" && <OverviewView profile={profile} onFieldChange={updateField} onEditPreferences={() => setActiveView("preferences")} />}
+      {activeView === "overview" && <OverviewView profile={profile} onOpenCompanies={() => setActiveView("companies")} onEditPreferences={() => setActiveView("preferences")} />}
       {activeView === "preferences" && <PreferencesView profile={profile} onFieldChange={updateField} />}
-      {activeView === "companies" && <CompaniesView companies={profile.companies} onChange={(companies) => updateField("companies", companies)} onEnrichCompany={onEnrichCompany} />}
+      {activeView === "companies" && <CompaniesView companies={profile.companies} events={profile.events} signals={profile.signals} onChange={(companies) => updateField("companies", companies)} onAddEvent={(event) => updateField("events", [event, ...profile.events])} onEnrichCompany={onEnrichCompany} />}
     </ProfileLayout>
   );
 }
