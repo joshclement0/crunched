@@ -4,6 +4,9 @@ import { makeStyles, tokens } from "@fluentui/react-components";
 import { EMPTY_PROFILE, UserProfile } from "./Profile/types";
 import { useWorkbookPreferences } from "../useWorkbookPreferences";
 import { mergeWorkbookPreferences, WorkbookPreferences } from "../workbookPreferences";
+import { useWorkbookCompanies } from "../useWorkbookCompanies";
+import { useCompanyEnrichment } from "../companyEnrichment";
+import { TrackedCompany } from "./Profile/types";
 
 interface AppProps {
   title: string;
@@ -86,6 +89,22 @@ const App: React.FC<AppProps> = ({ title }) => {
   );
 
   useWorkbookPreferences(updatePreferencesFromWorkbook);
+  useWorkbookCompanies(profile.companies);
+
+  const updateCompany = React.useCallback(
+    (id: string, updater: (company: TrackedCompany) => TrackedCompany) => {
+      setProfile((currentProfile) =>
+        saveProfile({
+          ...currentProfile,
+          companies: currentProfile.companies.map((company) =>
+            company.id === id ? updater(company) : company
+          ),
+        })
+      );
+    },
+    [saveProfile]
+  );
+  const companyEnrichment = useCompanyEnrichment(profile.companies, updateCompany);
 
   return (
     <main className={styles.root}>
@@ -94,7 +113,7 @@ const App: React.FC<AppProps> = ({ title }) => {
         <h1 className={styles.title}>Investment radar</h1>
         <p className={styles.subtitle}>Keep your thesis, portfolio, and companies to watch in one place.</p>
       </header>
-      <Profile profile={profile} onChange={updateProfile} />
+      <Profile profile={profile} onChange={updateProfile} onEnrichCompany={companyEnrichment.retry} />
     </main>
   );
 };

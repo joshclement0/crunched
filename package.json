@@ -16,6 +16,8 @@
     "build:dev": "webpack --mode development",
     "news:scrub": "node server/runDailyStartupScrub.mjs",
     "test:news-scrub": "node --test server/dailyStartupScrub.test.mjs",
+    "test:company-enrichment": "node --test server/companyEnrichment.test.mjs",
+    "typecheck": "tsc --noEmit",
     "dev-server": "webpack serve --mode development",
     "lint": "office-addin-lint check",
     "lint:fix": "office-addin-lint fix",

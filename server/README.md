@@ -36,3 +36,22 @@ const update = await runDailyStartupScrub({
 ```
 
 Persist `update.runDate` as the daily idempotency key if the scheduler might retry. Store or return the result from an authenticated backend endpoint for the Excel add-in.
+
+## Automatic company research
+
+When the development server is running, `POST /api/enrich-company` accepts a company name and
+optional website. The server uses Anthropic's live web-search tool to find evidence-backed company
+facts and returns `null` for fields it cannot verify. The API key remains server-side.
+
+The task pane automatically calls this endpoint for companies that have not been researched. It
+fills only missing values, retains the URLs used as research sources, and writes the expanded data
+to the `Companies` worksheet. Failed searches show a **Try again** action on the company card.
+
+Run the focused tests with:
+
+```powershell
+npm run test:company-enrichment
+```
+
+Production deployments must expose the same endpoint from their authenticated backend; the
+webpack development middleware is intended for local Office add-in development only.

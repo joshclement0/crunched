@@ -1,4 +1,23 @@
 export type CompanyRelationship = "invested" | "following";
+export type CompanyEnrichmentStatus = "pending" | "complete" | "failed";
+
+export interface CompanyEnrichment {
+  website: string | null;
+  description: string | null;
+  sector: string | null;
+  headquarters: string | null;
+  foundedDate: string | null;
+  founders: string[];
+  teamSize: number | null;
+  latestFundingRoundDate: string | null;
+  latestFundingRoundAmount: string | null;
+  latestFundingRoundType: string | null;
+  totalFunding: string | null;
+  valuation: string | null;
+  businessModel: string | null;
+  keyInvestors: string[];
+  sources: string[];
+}
 
 export interface TrackedCompany {
   id: string;
@@ -6,6 +25,23 @@ export interface TrackedCompany {
   sector: string;
   relationship: CompanyRelationship;
   website?: string;
+  pitchDeckUrl?: string;
+  description?: string;
+  headquarters?: string;
+  foundedDate?: string;
+  founders?: string[];
+  teamSize?: number;
+  latestFundingRoundDate?: string;
+  latestFundingRoundAmount?: string;
+  latestFundingRoundType?: string;
+  totalFunding?: string;
+  valuation?: string;
+  businessModel?: string;
+  keyInvestors?: string[];
+  enrichmentSources?: string[];
+  enrichmentStatus?: CompanyEnrichmentStatus;
+  enrichmentError?: string;
+  enrichedAt?: string;
   notes?: string;
   investedAmount?: string;
   nextReview?: string;
@@ -19,6 +55,7 @@ export const EMPTY_COMPANY_DRAFT: CompanyDraft = {
   sector: "",
   relationship: "following",
   website: "",
+  pitchDeckUrl: "",
   notes: "",
   investedAmount: "",
   nextReview: "",

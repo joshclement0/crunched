@@ -30,6 +30,7 @@ export default function CompanyForm({ draft, isEditing, onChange, onCancel, onSa
       </Field>
       {draft.relationship === "invested" && <Field label="Amount invested" hint="Optional; use any currency."><Input value={draft.investedAmount} placeholder="e.g. NOK 50,000" onChange={(_, data) => update("investedAmount", data.value)} /></Field>}
       <Field label="Website"><Input type="url" value={draft.website} placeholder="https://" onChange={(_, data) => update("website", data.value)} /></Field>
+      <Field label="Pitch deck"><Input type="url" value={draft.pitchDeckUrl} placeholder="https://" onChange={(_, data) => update("pitchDeckUrl", data.value)} /></Field>
       <Field label="Next review date"><Input type="date" value={draft.nextReview} onChange={(_, data) => update("nextReview", data.value)} /></Field>
       <Field label="Notes"><Textarea resize="vertical" value={draft.notes} placeholder="Why this company matters, what to follow up on..." onChange={(_, data) => update("notes", data.value)} /></Field>
       <div className={styles.formActions}>

@@ -4,6 +4,19 @@ const devCerts = require("office-addin-dev-certs");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
+const fs = require("node:fs");
+const path = require("node:path");
+
+function loadLocalServerEnvironment() {
+  const file = path.join(__dirname, ".env");
+  if (!fs.existsSync(file)) return;
+  fs.readFileSync(file, "utf8").split(/\r?\n/).forEach((line) => {
+    const match = line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/);
+    if (match && process.env[match[1]] === undefined) process.env[match[1]] = match[2].trim();
+  });
+}
+
+loadLocalServerEnvironment();
 
 const urlDev = "https://localhost:3000/";
 const urlProd = "https://www.contoso.com/"; // CHANGE THIS TO YOUR PRODUCTION DEPLOYMENT LOCATION
@@ -104,6 +117,28 @@ module.exports = async (env, options) => {
         options: env.WEBPACK_BUILD || options.https !== undefined ? options.https : await getHttpsOptions(),
       },
       port: process.env.npm_package_config_dev_server_port || 3000,
+      setupMiddlewares: (middlewares, devServer) => {
+        devServer.app.post("/api/enrich-company", (request, response) => {
+          let body = "";
+          request.on("data", (chunk) => {
+            body += chunk;
+            if (body.length > 20_000) request.destroy();
+          });
+          request.on("end", async () => {
+            response.setHeader("Content-Type", "application/json");
+            try {
+              const input = JSON.parse(body || "{}");
+              const { enrichCompany } = await import("./server/companyEnrichment.mjs");
+              const company = await enrichCompany(input);
+              response.end(JSON.stringify(company));
+            } catch (error) {
+              response.statusCode = error instanceof SyntaxError ? 400 : 500;
+              response.end(JSON.stringify({ error: error.message || "Company research failed" }));
+            }
+          });
+        });
+        return middlewares;
+      },
     },
   };
 

@@ -15,8 +15,8 @@ export function useCompanyEditor(
     setIsOpen(false);
   };
 
-  const openNew = () => {
-    setDraft(EMPTY_COMPANY_DRAFT);
+  const openNew = (preset: Partial<CompanyDraft> = {}) => {
+    setDraft({ ...EMPTY_COMPANY_DRAFT, ...preset });
     setEditingId(null);
     setIsOpen(true);
   };
@@ -27,6 +27,7 @@ export function useCompanyEditor(
       sector: company.sector,
       relationship: company.relationship,
       website: company.website || "",
+      pitchDeckUrl: company.pitchDeckUrl || "",
       notes: company.notes || "",
       investedAmount: company.investedAmount || "",
       nextReview: company.nextReview || "",
@@ -39,6 +40,7 @@ export function useCompanyEditor(
     if (!draft.name.trim()) return;
     const existing = companies.find((company) => company.id === editingId);
     const savedCompany: TrackedCompany = {
+      ...existing,
       ...draft,
       id: existing?.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name: draft.name.trim(),

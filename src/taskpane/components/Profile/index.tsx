@@ -8,9 +8,10 @@ import { UserProfile } from "./types";
 interface ProfileProps {
   profile: UserProfile;
   onChange: (profile: UserProfile) => void;
+  onEnrichCompany: (id: string) => void;
 }
 
-export default function Profile({ profile, onChange }: ProfileProps) {
+export default function Profile({ profile, onChange, onEnrichCompany }: ProfileProps) {
   const [activeView, setActiveView] = React.useState<ProfileView>("overview");
   const updateField = <K extends keyof UserProfile>(field: K, value: UserProfile[K]) => onChange({ ...profile, [field]: value });
 
@@ -18,7 +19,7 @@ export default function Profile({ profile, onChange }: ProfileProps) {
     <ProfileLayout activeView={activeView} onViewChange={setActiveView}>
       {activeView === "overview" && <OverviewView profile={profile} onFieldChange={updateField} onEditPreferences={() => setActiveView("preferences")} />}
       {activeView === "preferences" && <PreferencesView profile={profile} onFieldChange={updateField} />}
-      {activeView === "companies" && <CompaniesView companies={profile.companies} onChange={(companies) => updateField("companies", companies)} />}
+      {activeView === "companies" && <CompaniesView companies={profile.companies} onChange={(companies) => updateField("companies", companies)} onEnrichCompany={onEnrichCompany} />}
     </ProfileLayout>
   );
 }
