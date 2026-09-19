@@ -17,6 +17,7 @@
     "news:scrub": "node server/runDailyStartupScrub.mjs",
     "test:news-scrub": "node --test server/dailyStartupScrub.test.mjs",
     "test:company-enrichment": "node --test server/companyEnrichment.test.mjs",
+    "test:agent": "node --test server/excelAgent.test.mjs",
     "typecheck": "tsc --noEmit",
     "dev-server": "webpack serve --mode development",
     "lint": "office-addin-lint check",

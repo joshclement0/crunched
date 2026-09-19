@@ -4,7 +4,7 @@ export const useProfileStyles = makeStyles({
   content: { padding: "16px", maxWidth: "720px", margin: "0 auto" },
   tabs: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
     gap: "4px",
     padding: "4px",
     marginBottom: "16px",

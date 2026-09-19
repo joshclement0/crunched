@@ -6,6 +6,20 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
+
+const AGENT_REQUEST_LIMIT_BYTES = 5 * 1024 * 1024;
+
+function requestIdFor(request) {
+  const suppliedId = request.headers["x-request-id"];
+  return typeof suppliedId === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(suppliedId)
+    ? suppliedId
+    : `agent-${crypto.randomUUID()}`;
+}
+
+function logAgentRequest(level, message, details) {
+  console[level](`[agent] ${message}`, details);
+}
 
 function loadLocalServerEnvironment() {
   const file = path.join(__dirname, ".env");
@@ -118,6 +132,67 @@ module.exports = async (env, options) => {
       },
       port: process.env.npm_package_config_dev_server_port || 3000,
       setupMiddlewares: (middlewares, devServer) => {
+        devServer.app.post("/api/agent", (request, response) => {
+          const requestId = requestIdFor(request);
+          const startedAt = Date.now();
+          let body = "";
+          let receivedBytes = 0;
+          let requestTooLarge = false;
+          logAgentRequest("info", "Request received", { requestId });
+          request.on("data", (chunk) => {
+            receivedBytes += chunk.length;
+            if (receivedBytes > AGENT_REQUEST_LIMIT_BYTES) {
+              requestTooLarge = true;
+              return;
+            }
+            body += chunk;
+          });
+          request.on("end", async () => {
+            response.setHeader("Content-Type", "application/json");
+            response.setHeader("X-Request-ID", requestId);
+            if (requestTooLarge) {
+              response.statusCode = 413;
+              const error = `The workbook data sent to the AI is too large (${Math.ceil(
+                receivedBytes / 1024
+              )} KB). Ask about a smaller range or subset of the data.`;
+              logAgentRequest("warn", "Request rejected", {
+                requestId,
+                status: response.statusCode,
+                receivedBytes,
+                elapsedMs: Date.now() - startedAt,
+              });
+              response.end(JSON.stringify({ error }));
+              return;
+            }
+            try {
+              const input = JSON.parse(body || "{}");
+              const { runExcelAgent } = await import("./server/excelAgent.mjs");
+              const result = await runExcelAgent(input, { requestId, logger: console });
+              logAgentRequest("info", "Request completed", {
+                requestId,
+                status: 200,
+                receivedBytes,
+                elapsedMs: Date.now() - startedAt,
+                resultType: result.type,
+              });
+              response.end(JSON.stringify(result));
+            } catch (error) {
+              response.statusCode = Number.isInteger(error.statusCode)
+                ? error.statusCode
+                : error instanceof SyntaxError
+                  ? 400
+                  : 500;
+              logAgentRequest("error", "Request failed", {
+                requestId,
+                status: response.statusCode,
+                receivedBytes,
+                elapsedMs: Date.now() - startedAt,
+                error: error.message || String(error),
+              });
+              response.end(JSON.stringify({ error: error.message || "Agent request failed" }));
+            }
+          });
+        });
         devServer.app.post("/api/enrich-company", (request, response) => {
           let body = "";
           request.on("data", (chunk) => {

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useProfileStyles } from "./styles";
 
-export type ProfileView = "overview" | "preferences" | "companies";
+export type ProfileView = "overview" | "preferences" | "companies" | "chat";
 
 interface ProfileLayoutProps {
   activeView: ProfileView;
@@ -13,6 +13,7 @@ const VIEW_LABELS: Record<ProfileView, string> = {
   overview: "Overview",
   preferences: "Preferences",
   companies: "Companies",
+  chat: "Chat",
 };
 
 export default function ProfileLayout({ activeView, onViewChange, children }: ProfileLayoutProps) {
