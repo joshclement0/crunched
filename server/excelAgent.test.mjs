@@ -288,6 +288,48 @@ test("returns malformed model tool arguments for safe client-side validation and
   });
 });
 
+test("normalises common writeRange argument shapes before client execution", async () => {
+  const wrappedToolCall = {
+    type: "tool_use",
+    id: "call_wrapped",
+    name: "writeRange",
+    input: {
+      arguments: {
+        sheetName: "Sheet1",
+        range: "A1:B1",
+        data: ["Name", "ARR"],
+      },
+    },
+  };
+  const result = await runExcelAgent(
+    {
+      messages: [{ role: "user", content: "Add two headers" }],
+      workbookMetadata: WORKBOOK_METADATA,
+    },
+    {
+      apiKey: "test-key",
+      fetchImpl: async () =>
+        jsonResponse({
+          id: "resp_wrapped",
+          stop_reason: "tool_use",
+          content: [wrappedToolCall],
+        }),
+    }
+  );
+
+  assert.deepEqual(result.toolRequests, [
+    {
+      id: "call_wrapped",
+      name: "writeRange",
+      arguments: {
+        worksheet: "Sheet1",
+        address: "A1:B1",
+        values: [["Name", "ARR"]],
+      },
+    },
+  ]);
+});
+
 test("accepts a structured validation error for malformed tool arguments", async () => {
   const toolCall = {
     type: "tool_use",

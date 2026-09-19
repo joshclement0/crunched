@@ -55,7 +55,8 @@ export const EXCEL_TOOLS = [
   },
   {
     name: "writeRange",
-    description: "Write a rectangular two-dimensional array of values to an A1-style range.",
+    description:
+      "Write values to an A1-style range. Pass worksheet, address, and values directly (do not wrap them in an arguments object). values must be a rectangular two-dimensional array, for example [[\"Name\", \"ARR\"], [\"Acme\", 120000]].",
     input_schema: {
       type: "object",
       properties: {
@@ -362,6 +363,47 @@ function extractFinalAnswer(payload) {
     .trim();
 }
 
+const WRITE_RANGE_ARGUMENT_ALIASES = {
+  worksheetName: "worksheet",
+  sheetName: "worksheet",
+  sheet: "worksheet",
+  rangeAddress: "address",
+  range: "address",
+  cellRange: "address",
+  data: "values",
+  cells: "values",
+};
+
+function normaliseWriteRangeInput(input) {
+  let candidate = input;
+  if (Object.keys(candidate).length === 1 && isObject(candidate.arguments)) {
+    candidate = candidate.arguments;
+  }
+
+  const normalised = { ...candidate };
+  for (const [alias, canonical] of Object.entries(WRITE_RANGE_ARGUMENT_ALIASES)) {
+    if (normalised[canonical] === undefined && normalised[alias] !== undefined) {
+      normalised[canonical] = normalised[alias];
+      delete normalised[alias];
+    }
+  }
+
+  if (
+    Array.isArray(normalised.values) &&
+    normalised.values.length > 0 &&
+    normalised.values.every(
+      (cell) => cell === null || ["string", "number", "boolean"].includes(typeof cell)
+    )
+  ) {
+    normalised.values = [normalised.values];
+  }
+  return normalised;
+}
+
+function normaliseToolInput(name, input) {
+  return name === "writeRange" ? normaliseWriteRangeInput(input) : input;
+}
+
 function extractToolRequests(payload) {
   if (!Array.isArray(payload.content)) return [];
   return payload.content
@@ -375,7 +417,11 @@ function extractToolRequests(payload) {
       ) {
         throw new Error("The model returned an invalid Excel tool request");
       }
-      return { id: block.id, name: block.name, arguments: block.input };
+      return {
+        id: block.id,
+        name: block.name,
+        arguments: normaliseToolInput(block.name, block.input),
+      };
     });
 }
 
@@ -394,7 +440,7 @@ function agentInstructions(workbookMetadata, selectedRanges) {
     "If readRange reports range_payload_too_large, retry with a narrower range because some cells contain unusually large text values.",
     "After a workbook change, call inspectUsedRange before relying on metadata that may now be stale.",
     "Only request writeRange or createWorksheet when the user clearly asks for a workbook change.",
-    "For writeRange, supply exactly worksheet, address, and values. Values must be a non-empty rectangular matrix containing only strings, numbers, booleans, or null; its dimensions must exactly match the destination address.",
+    "For writeRange, supply exactly worksheet, address, and values at the top level of the tool input; never nest them inside arguments and never use aliases such as sheet, range, or data. Values must be a non-empty two-dimensional rectangular matrix containing only strings, numbers, booleans, or null, even for a single row or cell; its dimensions must exactly match the destination address.",
     "If no tool is needed, answer the user directly and concisely.",
   ].join(" ");
 }
